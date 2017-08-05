@@ -11,9 +11,12 @@ import SceneKit
 import ARKit
 
 class ViewController: UIViewController, ARSCNViewDelegate {
-
-    @IBOutlet var sceneView: ARSCNView!
     
+    @IBOutlet var sceneView: ARSCNView!
+    var numberNode: SCNNode = SCNNode()
+    var numberGeomerty: SCNText = SCNText()
+    var timer = Timer()
+    var actualNumber: Int = 0
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -24,10 +27,11 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         sceneView.showsStatistics = true
         
         // Create a new scene
-        let scene = SCNScene(named: "art.scnassets/ship.scn")!
+        let scene = SCNScene()
         
         // Set the scene to the view
         sceneView.scene = scene
+        self.perform(#selector(startContDown), with: nil, afterDelay: 3.0)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -47,34 +51,51 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         sceneView.session.pause()
     }
     
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Release any cached data, images, etc that aren't in use.
+    @objc func startContDown(){
+        self.countDown(number: 100)
     }
-
-    // MARK: - ARSCNViewDelegate
     
-/*
-    // Override to create and configure nodes for anchors added to the view's session.
-    func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
-        let node = SCNNode()
-     
-        return node
+    func countDown(number: Int){
+        if number > 0 {
+            self.actualNumber = number
+            self.initNumberNode(string: "\(actualNumber)")
+            self.timer = Timer.scheduledTimer(timeInterval: 0.01, target: self, selector: #selector(self.bringNode), userInfo: nil, repeats: true)
+            
+            
+        }
     }
-*/
     
-    func session(_ session: ARSession, didFailWithError error: Error) {
-        // Present an error message to the user
+    func initNumberNode(string: String){
+        self.numberGeomerty = SCNText(string: string, extrusionDepth: 1.0)
+        numberGeomerty.firstMaterial?.diffuse.contents = UIColor.red
         
+        self.numberNode = SCNNode(geometry: numberGeomerty)
+        self.numberNodeGoStartPosition()
+        self.numberNode.scale = SCNVector3(0.05, 0.05, 0.05)
+        
+        self.sceneView.scene.rootNode.addChildNode(numberNode)
     }
     
-    func sessionWasInterrupted(_ session: ARSession) {
-        // Inform the user that the session has been interrupted, for example, by presenting an overlay
-        
+    @objc func bringNode(){
+        var zCoordinate = self.numberNode.position.z
+        self.numberNode.position.z += 0.05
+        zCoordinate = self.numberNode.position.z
+        if zCoordinate >= 0 {
+            self.actualNumber -= 1
+            self.decreaseNumberNode()
+            self.numberNodeGoStartPosition()
+        }
+        if self.actualNumber <= 0 {
+            timer.invalidate()
+            self.numberGeomerty.string = "Go"
+        }
     }
     
-    func sessionInterruptionEnded(_ session: ARSession) {
-        // Reset tracking and/or remove existing anchors if consistent tracking is required
-        
+    func decreaseNumberNode(){
+        self.numberGeomerty.string = "\(self.actualNumber)"
+    }
+    
+    func numberNodeGoStartPosition(){
+        self.numberNode.position = SCNVector3(x: -0.2, y: -0.2, z: -3.5)
     }
 }
